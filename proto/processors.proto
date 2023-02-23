@@ -1,0 +1,14 @@
+syntax = "proto3";
+package processors;
+
+service GrpcExpressionProcessor {
+  rpc process (GrpcExpressionProcessingRequest) returns (GrpcExpressionProcessingResponse);
+}
+
+message GrpcExpressionProcessingRequest {
+  string expression = 1;
+}
+
+message GrpcExpressionProcessingResponse {
+  string expression = 1;
+}
