@@ -1,0 +1,35 @@
+[package]
+name = "grpc_calculator"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "expression_transformator_server"
+path = "src/expression_transformator_server.rs"
+
+[[bin]]
+name = "expression_transformator_client"
+path = "src/expression_transformator_client.rs"
+
+#[dependencies]
+#image = "0.24.5"
+#once_cell = "1.17.1"
+#tonic = "0.8.3"
+#prost = "0.11.6"
+#tokio = { version="1.25.0", features=["macros", "rt-multi-thread"]}
+#
+#[build-dependencies]
+#tonic-build = "0.8.4"
+
+
+[dependencies]
+image = "0.24.5"
+once_cell = "1.17.1"
+tonic = "0.7"
+prost = "0.10"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+
+[build-dependencies]
+tonic-build = "0.7"
