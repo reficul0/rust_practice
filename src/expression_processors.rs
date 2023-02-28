@@ -19,7 +19,7 @@ impl PostfixReversePolishNotation {
     }
 
     fn unwind<T>(&self, operators_stack: &mut Vec<char>, mut process_next_operator: T)
-        where T: FnMut(char) -> Unwinding {
+    where T: FnMut(char) -> Unwinding {
         while let Some(operator_from_stack) = operators_stack.last() {
             if let Unwinding::Stop(flags) = process_next_operator(*operator_from_stack) {
                 match flags {
@@ -102,6 +102,7 @@ impl PostfixReversePolishNotation {
         }
 
         for op in operators_stack.iter().rev() {
+            assert!(*op != '(' && *op != ')', "Wrong braces order");
             self.append_operator_postfix(*op, &mut postfix_expr);
         }
 
@@ -125,4 +126,70 @@ enum StoppingFlags {
 enum Unwinding {
     Stop(StoppingFlags),
     Continue
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_happy_path() {
+        let processor = Box::new(PostfixReversePolishNotation::new()) as Box<dyn ExpressionProcessor>;
+
+        assert_eq!(processor.process(&String::from("1+2+3")), String::from("1 2 + 3 +"));
+        assert_eq!(processor.process(&String::from("1-2-3")), String::from("1 2 - 3 -"));
+        assert_eq!(processor.process(&String::from("1*2*3")), String::from("1 2 * 3 *"));
+        assert_eq!(processor.process(&String::from("1/2/3")), String::from("1 2 / 3 /"));
+        assert_eq!(processor.process(&String::from("(1/2/3)")), String::from("1 2 / 3 /"));
+
+        assert_eq!(processor.process(&String::from("1+2*3")), String::from("1 2 3 * +"));
+        assert_eq!(processor.process(&String::from("1*2+3")), String::from("1 2 * 3 +"));
+
+        assert_eq!(processor.process(&String::from("1/(2-3)")), String::from("1 2 3 - /"));
+        assert_eq!(processor.process(&String::from("(2-3)/1")), String::from("2 3 - 1 /"));
+
+        assert_eq!(processor.process(&String::from("1*(2-3)-4/(5+6)")), String::from("1 2 3 - * 4 5 6 + / -"));
+
+        assert_eq!(processor.process(&String::from("12345+6789-1")), String::from("12345 6789 + 1 -"));
+    }
+
+    #[test]
+    fn test_happy_path_fictive_braces() {
+        let processor = Box::new(PostfixReversePolishNotation::new()) as Box<dyn ExpressionProcessor>;
+
+        assert_eq!(processor.process(&String::from("((1+2+3))")), String::from("1 2 + 3 +"));
+        // todo: bug or feature?
+        assert_eq!(processor.process(&String::from("(())((1+2+3))(())")), String::from("1 2 + 3 +"));
+        assert_eq!(processor.process(&String::from("(())")), String::from(""));
+        assert_eq!(processor.process(&String::from("()(())")), String::from(""));
+    }
+
+    #[test]
+    fn test_happy_path_braces_with_operators_between() {
+        let processor = Box::new(PostfixReversePolishNotation::new()) as Box<dyn ExpressionProcessor>;
+        assert_eq!(processor.process(&String::from("((1))+((1+2+3))+((4+5))")), String::from("1 1 2 + 3 + + 4 5 + +"));
+    }
+
+    #[test]
+    #[should_panic(expected = "Wrong braces order")]
+    fn test_wrong_braces_with_no_operators_between() {
+        let processor = Box::new(PostfixReversePolishNotation::new()) as Box<dyn ExpressionProcessor>;
+        // todo: now it returns "11 2 + 3 +4 5 +", have to fix it.
+        assert_eq!(processor.process(&String::from("((1))((1+2+3))((4+5))")), String::from(""));
+    }
+
+    #[test]
+    #[should_panic(expected = "Wrong braces order")]
+    fn test_wrong_braces_order_no_closing() {
+        let processor = Box::new(PostfixReversePolishNotation::new()) as Box<dyn ExpressionProcessor>;
+        let _ = processor.process(&String::from("("));
+    }
+
+    #[test]
+    #[should_panic(expected = "Can't find open bracket '(' for closing bracket ')' at id [5]")]
+    fn test_wrong_braces_order_no_opening() {
+        let processor = Box::new(PostfixReversePolishNotation::new()) as Box<dyn ExpressionProcessor>;
+        let _ = processor.process(&String::from("(1+2))"));
+    }
+
 }
